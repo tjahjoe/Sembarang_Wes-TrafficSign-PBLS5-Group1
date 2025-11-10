@@ -8,7 +8,7 @@ import numpy as np
 app = Flask(__name__)
 
 try:
-    model = YOLO("traffic_sign.pt")
+    model = YOLO("../model/traffic_sign.pt")
     print("Model YOLOv8 berhasil dimuat.")
 except Exception as e:
     print(f"Error memuat model: {e}")
