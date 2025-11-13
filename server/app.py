@@ -3,12 +3,14 @@ import cv2
 import joblib
 import numpy as np
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from scipy.signal import convolve2d
 from skimage.color import rgb2gray
 from skimage.feature import hog
 import warnings
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS untuk semua routes
 warnings.filterwarnings('ignore')
 
 SVM_MODEL_PATH = '../model/svm_traffic_sign_model.pkl'
