@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
@@ -21,6 +22,9 @@ class _MyDJAppState extends State<MyDJApp> {
   File? _image;
   String? _result;
   bool _loading = false;
+  List<Map<String, dynamic>> _detections = [];
+  double? _origImageWidth;
+  double? _origImageHeight;
 
   static const String SERVER_URL = 'http://127.0.0.1:5000';
   Future<void> _pickAndPredict() async {
@@ -43,7 +47,71 @@ class _MyDJAppState extends State<MyDJApp> {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
     if (pickedFile == null) return;
-    _processImage(pickedFile);
+    await _processImageYolo(pickedFile);
+  }
+
+  Future<void> _processImageYolo(XFile pickedFile) async {
+    setState(() {
+      _loading = true;
+      _result = null;
+      _detections = [];
+    });
+
+    try {
+      final bytes = await pickedFile.readAsBytes();
+      final uiImage = await ui.decodeImageFromList(bytes);
+      _origImageWidth = uiImage.width.toDouble();
+      _origImageHeight = uiImage.height.toDouble();
+
+      setState(() {
+        _image = File(pickedFile.path);
+      });
+
+      final uri = Uri.parse('$SERVER_URL/predict-yolo');
+      final request = http.MultipartRequest('POST', uri);
+      request.files.add(http.MultipartFile.fromBytes('image', bytes, filename: pickedFile.name ?? 'image.jpg'));
+
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body is List) {
+          final List<Map<String, dynamic>> dets = [];
+          for (final item in body) {
+            if (item is Map<String, dynamic>) {
+              dets.add(item);
+            } else if (item is Map) {
+              dets.add(Map<String, dynamic>.from(item));
+            }
+          }
+          setState(() {
+            _detections = dets;
+            _result = 'Terdeteksi: ${dets.length} objek';
+          });
+        } else if (body is Map && body['error'] != null) {
+          setState(() {
+            _result = 'Server error: ${body['error']}';
+          });
+        } else {
+          setState(() {
+            _result = 'Response tidak dalam format deteksi.';
+          });
+        }
+      } else {
+        setState(() {
+          _result = 'Request gagal: HTTP ${response.statusCode}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _result = 'Error saat mengirim ke server: $e';
+      });
+    } finally {
+      setState(() {
+        _loading = false;
+      });
+    }
   }
 
   Future<void> _processImage(XFile pickedFile) async {
@@ -139,56 +207,92 @@ class _MyDJAppState extends State<MyDJApp> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (_image != null)
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade800,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.amber.shade300,
-                            width: 1.5,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Main image with overlayed detection boxes
+                          SizedBox(
+                            height: 280,
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final displayW = constraints.maxWidth;
+                                final displayH = (_origImageWidth != null && _origImageHeight != null)
+                                    ? displayW * (_origImageHeight! / _origImageWidth!)
+                                    : constraints.maxHeight;
+
+                                final scaleX = (_origImageWidth != null && _origImageWidth! > 0)
+                                    ? (displayW / _origImageWidth!)
+                                    : 1.0;
+                                final scaleY = (_origImageHeight != null && _origImageHeight! > 0)
+                                    ? (displayH / _origImageHeight!)
+                                    : 1.0;
+
+                                return Center(
+                                  child: Stack(
+                                    children: [
+                                      SizedBox(
+                                        width: displayW,
+                                        height: displayH,
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: Image.file(_image!, fit: BoxFit.fill),
+                                        ),
+                                      ),
+                                      // draw boxes
+                                      for (final det in _detections)
+                                        if (det['box_xyxy'] != null)
+                                          (() {
+                                            final coords = List<double>.from((det['box_xyxy'] as List).map((e) => (e as num).toDouble()));
+                                            final left = coords[0] * scaleX;
+                                            final top = coords[1] * scaleY;
+                                            final boxW = (coords[2] - coords[0]) * scaleX;
+                                            final boxH = (coords[3] - coords[1]) * scaleY;
+                                            return Positioned(
+                                              left: left,
+                                              top: top,
+                                              width: boxW,
+                                              height: boxH,
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  border: Border.all(color: Colors.redAccent, width: 2),
+                                                ),
+                                                child: Align(
+                                                  alignment: Alignment.topLeft,
+                                                  child: Container(
+                                                    color: Colors.redAccent.withOpacity(0.8),
+                                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                                    child: Text(
+                                                      '${det['class_name'] ?? 'obj'} ${(det['confidence'] != null) ? ((det['confidence'] as num) * 100).toStringAsFixed(0) + '%' : ''}',
+                                                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          })(),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              'Gambar Input',
-                              style: TextStyle(
-                                color: Colors.amber.shade300,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.5,
-                              ),
+                          const SizedBox(height: 8),
+                          // Detected labels as chips (could be >1)
+                          if (_detections.isNotEmpty)
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 6,
+                              children: _detections.map((d) {
+                                final name = d['class_name'] ?? 'obj';
+                                final conf = d['confidence'] != null ? ((d['confidence'] as num) * 100).toStringAsFixed(0) + '%' : '';
+                                return Chip(
+                                  label: Text('$name $conf'),
+                                  backgroundColor: Colors.black54,
+                                  labelStyle: const TextStyle(color: Colors.white),
+                                );
+                              }).toList(),
                             ),
-                            const SizedBox(height: 12),
-                            Container(
-                              width: 100,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: Colors.amber.shade200,
-                                  width: 1,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
-                                child: Image.file(
-                                  _image!,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Preview resized untuk model',
-                              style: TextStyle(
-                                color: Colors.grey.shade400,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
+                        ],
                       ),
                     const SizedBox(height: 28),
 
