@@ -272,7 +272,7 @@ def predict():
             image_bytes = file.read()
             pil_image = Image.open(io.BytesIO(image_bytes))
 
-            results = yolo_model.predict(source=pil_image, conf=0.5)
+            results = yolo_model.predict(source=pil_image, conf=0.8)
 
             output_data = []
             
