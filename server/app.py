@@ -296,6 +296,23 @@ def predict():
 
         except Exception as e:
             return jsonify({"error": f"Error saat memproses gambar: {e}"}), 500
+            
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form.get('username')
+    password = request.form.get('password')
+
+    if username == 'user' and password == '123': 
+        return jsonify({
+            'success': True,
+            'message': 'Login successful',
+            'token': 'mock-auth-token-12345'
+        }), 200
+    else:
+        return jsonify({
+            'success': False,
+            'message': 'Invalid username or password'
+        }), 401 
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

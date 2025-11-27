@@ -25,7 +25,7 @@ class DataProvider extends ChangeNotifier {
   double? get origImageWidth => _origImageWidth;
   double? get origImageHeight => _origImageHeight;
 
-  static const String SERVER_URL = 'http://192.168.1.6:5000';
+  static const String SERVER_URL = 'http://192.168.1.7:5000';
 
   // --- Logika Pemrosesan Gambar dan Komunikasi Server ---
 
