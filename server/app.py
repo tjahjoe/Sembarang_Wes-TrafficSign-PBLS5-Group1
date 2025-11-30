@@ -16,9 +16,9 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS untuk semua routes
 warnings.filterwarnings('ignore')
 
-SVM_MODEL_PATH = '../model/svm_traffic_sign_model.pkl'
-RF_MODEL_PATH = '../model/rf_traffic_sign_model.pkl'
-YOLO_MODEL_PATh = '../model/traffic_sign.pt'
+SVM_MODEL_PATH = '../model/v2/svm_traffic_sign_model.pkl'
+RF_MODEL_PATH = '../model/v2/rf_traffic_sign_model.pkl'
+YOLO_MODEL_PATh = '../model/v1/traffic_sign.pt'
 LABEL_PATH = '../pkg/list_label.txt'
 IMG_SIZE = (64, 64)
 
