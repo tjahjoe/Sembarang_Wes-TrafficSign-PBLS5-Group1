@@ -9,25 +9,34 @@ import 'package:http/http.dart' as http;
 import 'package:pbl/data/login_info.dart';
 
 class DataProvider extends ChangeNotifier {
-  // --- State Variables ---
   File? _image;
   String? _result;
   bool _loading = false;
   List<Map<String, dynamic>> _detections = [];
   double? _origImageWidth;
   double? _origImageHeight;
+  String _predictionMethod = 'svm';
 
-  // --- Getters untuk akses UI ---
   File? get image => _image;
   String? get result => _result;
   bool get isLoading => _loading;
   List<Map<String, dynamic>> get detections => _detections;
   double? get origImageWidth => _origImageWidth;
   double? get origImageHeight => _origImageHeight;
+  String get predictionMethod => _predictionMethod;
 
-  static const String SERVER_URL = 'http://192.168.1.7:5000';
+  // Set IP sesuai dengan server yang digunakan
+  static const String SERVER_URL = 'http://192.168.1.9:5000';
 
-  // --- Logika Pemrosesan Gambar dan Komunikasi Server ---
+  // Setter untuk metode prediksi
+  void setPredictionMethod(String method) {
+    if (method == 'svm' || method == 'rf') {
+      _predictionMethod = method;
+      notifyListeners();
+    }
+  }
+
+  // Logika Pemrosesan Gambar dan Komunikasi Server
 
   Future<bool> isLoggedIn() async
   {
@@ -146,7 +155,9 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final uri = Uri.parse('$SERVER_URL/predict-svm');
+      // Pilih endpoint berdasarkan metode yang dipilih
+      final endpoint = _predictionMethod == 'svm' ? '/predict-svm' : '/predict-rf';
+      final uri = Uri.parse('$SERVER_URL$endpoint');
       final request = http.MultipartRequest('POST', uri);
       request.files.add(
         await http.MultipartFile.fromPath('image', pickedFile.path),
@@ -161,7 +172,8 @@ class DataProvider extends ChangeNotifier {
           final pred = body['prediction'];
           final labelName = pred['label_name'] ?? 'unknown';
           final labelIndex = pred['label_index'] ?? 'unknown';
-          _result = 'Prediksi: $labelName (index: $labelIndex)';
+          final methodName = _predictionMethod == 'svm' ? 'SVM' : 'Random Forest';
+          _result = 'Prediksi ($methodName): $labelName (index: $labelIndex)';
         } else if (body['error'] != null) {
           _result = 'Server error: ${body['error']}';
         } else {

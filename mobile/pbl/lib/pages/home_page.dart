@@ -128,6 +128,79 @@ class HomePage extends StatelessWidget {
                     ),
                   const SizedBox(height: 28),
 
+                  // Pilihan Metode Prediksi
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade800,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.amber.shade300,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Metode Prediksi',
+                          style: TextStyle(
+                            color: Colors.amber.shade300,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: RadioListTile<String>(
+                                title: const Text(
+                                  'SVM',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                value: 'svm',
+                                groupValue: dataProvider.predictionMethod,
+                                onChanged: _loading ? null : (value) {
+                                  if (value != null) {
+                                    dataProviderFunction.setPredictionMethod(value);
+                                  }
+                                },
+                                activeColor: Colors.amber.shade600,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                            Expanded(
+                              child: RadioListTile<String>(
+                                title: const Text(
+                                  'Random Forest',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                value: 'rf',
+                                groupValue: dataProvider.predictionMethod,
+                                onChanged: _loading ? null : (value) {
+                                  if (value != null) {
+                                    dataProviderFunction.setPredictionMethod(value);
+                                  }
+                                },
+                                activeColor: Colors.amber.shade600,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
