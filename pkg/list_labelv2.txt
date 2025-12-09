@@ -1,0 +1,13 @@
+lampu-merah
+larangan-belok-kiri
+larangan-berhenti
+larangan-berjalan-terus-wajib-berhenti-sesaat
+larangan-masuk-bagi-kendaraan-bermotor-dan-tidak-bermotor
+larangan-memutar-balik
+larangan-parkir
+peringatan-pintu-perlintasan-kereta-api
+perintah-pilihan-memasuki-salah-satu-jalur
+petunjuk-area-parkir
+petunjuk-lokasi-pemberhentian-bus
+petunjuk-lokasi-putar-balik
+petunjuk-penyeberangan-pejalan-kaki

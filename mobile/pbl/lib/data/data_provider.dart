@@ -27,7 +27,7 @@ class DataProvider extends ChangeNotifier {
 
   // Set IP sesuai dengan server yang digunakan
   static const String SERVER_URL = 'http://192.168.1.9:5000';
-
+  
   // Setter untuk metode prediksi
   void setPredictionMethod(String method) {
     if (method == 'svm' || method == 'rf') {

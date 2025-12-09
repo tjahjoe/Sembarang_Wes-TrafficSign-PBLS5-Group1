@@ -16,10 +16,10 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS untuk semua routes
 warnings.filterwarnings('ignore')
 
-SVM_MODEL_PATH = '../model/v2/svm_traffic_sign_model.pkl'
-RF_MODEL_PATH = '../model/v2/rf_traffic_sign_model.pkl'
-YOLO_MODEL_PATh = '../model/v1/traffic_sign.pt'
-LABEL_PATH = '../pkg/list_label.txt'
+SVM_MODEL_PATH = '../model/v3/svm_traffic_sign_model.pkl'
+RF_MODEL_PATH = '../model/v3/rf_traffic_sign_model.pkl'
+YOLO_MODEL_PATh = '../model/v3/traffic_sign.pt'
+LABEL_PATH = '../pkg/list_labelv2.txt'
 IMG_SIZE = (64, 64)
 
 try:
@@ -46,104 +46,6 @@ except Exception as e:
     rf_model = None
     yolo_model = None
     list_label = []
-
-# def get_gradients(gray_image):
-#     """Menghitung magnitudo dan orientasi gradien."""
-#     sobel_x = np.array([[-1, 0, 1],
-#                         [-2, 0, 2],
-#                         [-1, 0, 1]])
-    
-#     sobel_y = np.array([[-1, -2, -1],
-#                         [ 0,  0,  0],
-#                         [ 1,  2,  1]])
-    
-#     Gx = convolve2d(gray_image, sobel_x, mode='same', boundary='symm')
-#     Gy = convolve2d(gray_image, sobel_y, mode='same', boundary='symm')
-    
-#     magnitude = np.sqrt(Gx**2 + Gy**2)
-#     orientation_rad = np.arctan2(Gy, Gx)
-
-#     orientation_deg = np.degrees(orientation_rad) % 180
-    
-#     return magnitude, orientation_deg
-
-# def manual_hog_extractor(gray_image, pixels_per_cell=(8, 8), cells_per_block=(2, 2), n_bins=9):
-#     """
-#     Mengimplementasikan HOG secara manual menggunakan NumPy.
-    
-#     Langkah 1: Menghitung gradien (magnitudo & orientasi).
-#     Langkah 2: Membuat histogram orientasi untuk setiap 'cell'.
-#     Langkah 3 & 4: Normalisasi histogram dalam 'block' yang tumpang tindih.
-#     Langkah 5: Menggabungkan semua vektor blok menjadi satu vektor fitur.
-#     """
-    
-#     magnitude, orientation = get_gradients(gray_image)
-    
-#     img_h, img_w = gray_image.shape
-#     cell_h, cell_w = pixels_per_cell
-#     block_h, block_w = cells_per_block
-    
-#     n_cells_y = img_h // cell_h 
-#     n_cells_x = img_w // cell_w 
-    
-#     bin_size = 180.0 / n_bins
-
-#     cell_histograms = np.zeros((n_cells_y, n_cells_x, n_bins))
-    
-#     for y in range(n_cells_y):
-#         for x in range(n_cells_x):
-#             cell_y_start = y * cell_h
-#             cell_y_end = (y + 1) * cell_h
-#             cell_x_start = x * cell_w
-#             cell_x_end = (x + 1) * cell_w
-            
-#             magnitude_cell = magnitude[cell_y_start:cell_y_end, cell_x_start:cell_x_end]
-#             orientation_cell = orientation[cell_y_start:cell_y_end, cell_x_start:cell_x_end]
-            
-#             hist = np.zeros(n_bins)
-            
-#             for r in range(cell_h):
-#                 for c in range(cell_w):
-#                     mag = magnitude_cell[r, c]
-#                     ori = orientation_cell[r, c]
-                    
-#                     bin_idx_float = ori / bin_size
-#                     bin_1 = int(np.floor(bin_idx_float - 0.5)) 
-#                     bin_2 = int(np.floor(bin_idx_float + 0.5))
-                    
-#                     weight_2 = (bin_idx_float - (bin_1 + 0.5))
-#                     weight_1 = 1.0 - weight_2
-                    
-#                     hist[bin_1 % n_bins] += weight_1 * mag
-#                     hist[bin_2 % n_bins] += weight_2 * mag
-                    
-#             cell_histograms[y, x, :] = hist
-            
-    
-#     n_blocks_y = n_cells_y - block_h + 1 
-#     n_blocks_x = n_cells_x - block_w + 1 
-    
-#     all_blocks_list = []
-    
-#     epsilon = 1e-5
-    
-#     for by in range(n_blocks_y):
-#         for bx in range(n_blocks_x):
-
-#             block = cell_histograms[by : by + block_h, 
-#                                     bx : bx + block_w, 
-#                                     :]
-
-#             block_vector = block.ravel()
-            
-#             norm = np.sqrt(np.sum(block_vector**2) + epsilon)
-#             block_normalized = block_vector / norm
-            
-#             all_blocks_list.append(block_normalized)
-            
-#     final_feature_vector = np.concatenate(all_blocks_list)
-    
-#     return final_feature_vector
 
 
 def preprocess_image_for_prediction(img_bytes):
