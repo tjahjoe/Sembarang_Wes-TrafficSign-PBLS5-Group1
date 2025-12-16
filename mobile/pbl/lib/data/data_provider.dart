@@ -15,7 +15,7 @@ class DataProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _detections = [];
   double? _origImageWidth;
   double? _origImageHeight;
-  String _predictionMethod = 'svm';
+  String? _predictionMethod;
 
   File? get image => _image;
   String? get result => _result;
@@ -23,17 +23,28 @@ class DataProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get detections => _detections;
   double? get origImageWidth => _origImageWidth;
   double? get origImageHeight => _origImageHeight;
-  String get predictionMethod => _predictionMethod;
+  String? get predictionMethod => _predictionMethod;
 
   // Set IP sesuai dengan server yang digunakan
-  static const String SERVER_URL = 'http://192.168.1.9:5000';
+  static const String SERVER_URL = 'https://elchilz-sembarang-wes.hf.space';
   
   // Setter untuk metode prediksi
   void setPredictionMethod(String method) {
-    if (method == 'svm' || method == 'rf') {
+    if (_predictionMethod == method) {
+      _predictionMethod = null;
+      _result = null;
+      _image = null;
+      _detections.clear();
+    } else {
       _predictionMethod = method;
-      notifyListeners();
     }
+    notifyListeners();
+  }
+
+  // Cancel pilihan metode
+  void cancelPredictionMethod() {
+    _predictionMethod = null;
+    notifyListeners();
   }
 
   // Logika Pemrosesan Gambar dan Komunikasi Server
@@ -56,10 +67,16 @@ class DataProvider extends ChangeNotifier {
   }
 
   Future<void> pickAndPredict() async {
+    if (_predictionMethod == null) {
+      _result = 'Silakan pilih metode prediksi terlebih dahulu.';
+      notifyListeners();
+      return;
+    }
+
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
-    // Panggil metode prediksi yang digunakan SVM
+
     await _processImage(pickedFile);
   }
 
@@ -156,6 +173,12 @@ class DataProvider extends ChangeNotifier {
 
     try {
       // Pilih endpoint berdasarkan metode yang dipilih
+      if (_predictionMethod == null) {
+        _result = 'Metode prediksi belum dipilih.';
+        _loading = false;
+        notifyListeners();
+        return;
+      }
       final endpoint = _predictionMethod == 'svm' ? '/predict-svm' : '/predict-rf';
       final uri = Uri.parse('$SERVER_URL$endpoint');
       final request = http.MultipartRequest('POST', uri);
