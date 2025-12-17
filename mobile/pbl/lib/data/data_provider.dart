@@ -16,8 +16,6 @@ class DataProvider extends ChangeNotifier {
   double? _origImageWidth;
   double? _origImageHeight;
   String? _predictionMethod;
-
-  // Default 75%
   int _minConfidence = 75;
 
   File? get image => _image;
@@ -34,6 +32,7 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Set IP sesuai dengan server yang digunakan
   static const String SERVER_URL = 'https://elchilz-sembarang-wes.hf.space';
 
   void setPredictionMethod(String method) {
@@ -66,6 +65,7 @@ class DataProvider extends ChangeNotifier {
     loginInfo.saveToSharedPreferences();
   }
 
+  // Fungsi untuk Gallery (Butuh Metode SVM/RF)
   Future<void> pickAndPredict() async {
     if (_predictionMethod == null) {
       _result = 'Silakan pilih metode prediksi terlebih dahulu.';
@@ -80,6 +80,7 @@ class DataProvider extends ChangeNotifier {
     await _processImage(pickedFile);
   }
 
+  // Fungsi untuk Kamera (LANGSUNG YOLO, TIDAK BUTUH METODE DIPILIH)
   Future<void> captureFromCamera(BuildContext context) async {
     if (!Platform.isAndroid && !Platform.isIOS) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -90,17 +91,15 @@ class DataProvider extends ChangeNotifier {
       return;
     }
 
-    if (_predictionMethod == null) {
-      _result = 'Silakan pilih metode prediksi terlebih dahulu.';
-      notifyListeners();
-      return;
-    }
+    // --- PERBAIKAN: Hapus pengecekan _predictionMethod di sini ---
+    // Karena kamera otomatis pakai YOLO.
 
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
     if (pickedFile == null) return;
 
-    await _processImage(pickedFile);
+    // Langsung panggil fungsi YOLO
+    await _processImageYolo(pickedFile);
   }
 
   Future<ui.Image> _decodeImage(Uint8List bytes) {
@@ -115,6 +114,8 @@ class DataProvider extends ChangeNotifier {
     _loading = true;
     _result = null;
     _detections = [];
+    // Reset prediction method UI agar tidak membingungkan
+    _predictionMethod = null;
     notifyListeners();
 
     try {
@@ -149,7 +150,6 @@ class DataProvider extends ChangeNotifier {
           _detections = dets;
 
           if (dets.isEmpty) {
-            // --- UPDATE KALIMAT ---
             _result = 'Tidak terdeteksi karena confidence dibawah $_minConfidence%';
           } else {
             final classesString = dets
@@ -179,10 +179,7 @@ class DataProvider extends ChangeNotifier {
   }
 
   Future<void> _processImage(XFile pickedFile) async {
-    if (_predictionMethod == 'yolo') {
-      await _processImageYolo(pickedFile);
-      return;
-    }
+    // Jika tombol Galeri memanggil ini
 
     _image = File(pickedFile.path);
     _loading = true;
@@ -190,6 +187,14 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Pastikan metode dipilih (Hanya untuk Galeri/SVM/RF)
+      if (_predictionMethod == null) {
+        _result = 'Metode prediksi belum dipilih.';
+        _loading = false;
+        notifyListeners();
+        return;
+      }
+
       final endpoint = _predictionMethod == 'svm'
           ? '/predict-svm'
           : '/predict-rf';
@@ -221,7 +226,6 @@ class DataProvider extends ChangeNotifier {
           }
 
           if (confidencePercent < _minConfidence) {
-            // --- UPDATE KALIMAT ---
             _result = 'Tidak terdeteksi karena confidence dibawah $_minConfidence%';
           } else {
             final methodName = _predictionMethod == 'svm' ? 'SVM' : 'Random Forest';
@@ -230,8 +234,6 @@ class DataProvider extends ChangeNotifier {
           }
 
         } else {
-          // Jika server tidak mengembalikan prediksi (terfilter di server)
-          // --- UPDATE KALIMAT ---
           _result = 'Tidak terdeteksi karena confidence dibawah $_minConfidence%';
         }
       } else {
