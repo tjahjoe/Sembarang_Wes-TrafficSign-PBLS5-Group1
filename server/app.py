@@ -15,10 +15,15 @@ warnings.filterwarnings('ignore')
 app = Flask(__name__)
 CORS(app)
 
-SVM_MODEL_PATH = 'svm_traffic_sign_model.pkl'
-RF_MODEL_PATH = 'rf_traffic_sign_model.pkl'
-YOLO_MODEL_PATH = 'traffic_sign.pt'
-LABEL_PATH = 'list_labelv2.txt'
+# SVM_MODEL_PATH = 'svm_traffic_sign_model.pkl'
+# RF_MODEL_PATH = 'rf_traffic_sign_model.pkl'
+# YOLO_MODEL_PATH = 'traffic_sign.pt'
+# LABEL_PATH = 'list_labelv2.txt'
+
+SVM_MODEL_PATH = '../model/v4/svm_traffic_sign_model.pkl'
+RF_MODEL_PATH = '../model/v4/rf_traffic_sign_model.pkl'
+YOLO_MODEL_PATH = '../model/v3/traffic_sign.pt'
+LABEL_PATH = '../pkg/list_labelv2.txt'
 IMG_SIZE = (64, 64)
 
 try:
@@ -60,57 +65,70 @@ def label_decoder(idx):
 @app.route('/predict-svm', methods=['POST'])
 def predict_svm():
     image = request.files.get('image')
+
+    min_conf = float(request.form.get('min_confidence', 0))
+    min_conf = max(0, min(min_conf, 100))  
+
     features = preprocess_image_for_prediction(image.read())
     idx = int(svm_model.predict(features)[0])
-    conv = svm_model.predict_proba(features)[0][idx] * 100
+    conf = svm_model.predict_proba(features)[0][idx] * 100
 
-    if conv < 75:
+    if conf < min_conf:
         return jsonify({
             'success': False,
             'message': 'Prediction confidence too low'
         })
     else:
         return jsonify({
-        'success': True,
-        'prediction': {
-            'label_name': label_decoder(idx),
-            'label_index': idx,
-            'confidence': conv
+            'success': True,
+            'prediction': {
+                'label_name': label_decoder(idx),
+                'label_index': idx,
+                'confidence': int(conf)
             }
         })
 
 @app.route('/predict-rf', methods=['POST'])
 def predict_rf():
     image = request.files.get('image')
+
+    min_conf = float(request.form.get('min_confidence', 0))
+    min_conf = max(0, min(min_conf, 100)) 
+
     features = preprocess_image_for_prediction(image.read())
     idx = int(rf_model.predict(features)[0])
-    conv = rf_model.predict_proba(features)[0][idx] * 100
-    if conv < 75:
+    conf = rf_model.predict_proba(features)[0][idx] * 100
+
+    if conf < min_conf:
         return jsonify({
             'success': False,
             'message': 'Prediction confidence too low'
         })
     else:
         return jsonify({
-        'success': True,
-        'prediction': {
-            'label_name': label_decoder(idx),
-            'label_index': idx,
-            'confidence': conv
+            'success': True,
+            'prediction': {
+                'label_name': label_decoder(idx),
+                'label_index': idx,
+                'confidence': int(conf)
             }
         })
 
+
 @app.route('/predict-yolo', methods=['POST'])
 def predict_yolo():
+    min_conf = float(request.form.get('min_confidence', 0))
+    min_conf = max(0, min(min_conf, 100))  
+    min_conf /= 100
     image = Image.open(io.BytesIO(request.files['image'].read()))
-    results = yolo_model(image, conf=0.8)[0]
+    results = yolo_model(image, conf=min_conf)[0]
 
     output = []
     for box in results.boxes:
         output.append({
             "class_name": yolo_model.names[int(box.cls[0])],
             "class_id": int(box.cls[0]),
-            "confidence": float(box.conf[0]),
+            "confidence": int(float(box.conf[0]) * 100),
             "box_xyxy": box.xyxy[0].tolist()
         })
     return jsonify(output)
