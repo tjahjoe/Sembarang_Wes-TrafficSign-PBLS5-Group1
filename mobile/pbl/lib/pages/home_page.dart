@@ -152,47 +152,37 @@ class HomePage extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Row(
+                        
+                        Wrap(
+                          spacing: 12,
                           children: [
-                            Expanded(
-                              child: RadioListTile<String>(
-                                title: const Text(
-                                  'SVM',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                value: 'svm',
-                                groupValue: dataProvider.predictionMethod,
-                                onChanged: _loading ? null : (value) {
-                                  if (value != null) {
-                                    dataProviderFunction.setPredictionMethod(value);
-                                  }
-                                },
-                                activeColor: Colors.amber.shade600,
-                                contentPadding: EdgeInsets.zero,
+                            ChoiceChip(
+                              label: const Text(
+                                'SVM',
+                                style: TextStyle(color: Colors.white),
                               ),
+                              selected: dataProvider.predictionMethod == 'svm',
+                              selectedColor: Colors.amber.shade600,
+                              backgroundColor: Colors.grey.shade700,
+                              onSelected: _loading
+                                  ? null
+                                  : (_) {
+                                dataProviderFunction.setPredictionMethod('svm');
+                              },
                             ),
-                            Expanded(
-                              child: RadioListTile<String>(
-                                title: const Text(
-                                  'Random Forest',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                value: 'rf',
-                                groupValue: dataProvider.predictionMethod,
-                                onChanged: _loading ? null : (value) {
-                                  if (value != null) {
-                                    dataProviderFunction.setPredictionMethod(value);
-                                  }
-                                },
-                                activeColor: Colors.amber.shade600,
-                                contentPadding: EdgeInsets.zero,
+                            ChoiceChip(
+                              label: const Text(
+                                'Random Forest',
+                                style: TextStyle(color: Colors.white),
                               ),
+                              selected: dataProvider.predictionMethod == 'rf',
+                              selectedColor: Colors.amber.shade600,
+                              backgroundColor: Colors.grey.shade700,
+                              onSelected: _loading
+                                  ? null
+                                  : (_) {
+                                dataProviderFunction.setPredictionMethod('rf');
+                              },
                             ),
                           ],
                         ),
