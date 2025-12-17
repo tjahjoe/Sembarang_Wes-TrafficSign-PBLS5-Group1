@@ -27,7 +27,7 @@ class DataProvider extends ChangeNotifier {
 
   // Set IP sesuai dengan server yang digunakan
   static const String SERVER_URL = 'https://elchilz-sembarang-wes.hf.space';
-  
+
   // Setter untuk metode prediksi
   void setPredictionMethod(String method) {
     if (_predictionMethod == method) {
@@ -49,14 +49,12 @@ class DataProvider extends ChangeNotifier {
 
   // Logika Pemrosesan Gambar dan Komunikasi Server
 
-  Future<bool> isLoggedIn() async
-  {
+  Future<bool> isLoggedIn() async {
     LoginInfo loginInfo = await LoginInfo.fromSharedPreferences();
     return loginInfo.isLoggedIn;
   }
 
-  Future<void> saveLoginInfo(String username, String password) async
-  {
+  Future<void> saveLoginInfo(String username, String password) async {
     LoginInfo loginInfo = await LoginInfo.fromSharedPreferences();
 
     loginInfo.username = username;
@@ -123,11 +121,7 @@ class DataProvider extends ChangeNotifier {
       final uri = Uri.parse('$SERVER_URL/predict-yolo');
       final request = http.MultipartRequest('POST', uri);
       request.files.add(
-        http.MultipartFile.fromBytes(
-          'image',
-          bytes,
-          filename: pickedFile.name,
-        ),
+        http.MultipartFile.fromBytes('image', bytes, filename: pickedFile.name),
       );
 
       final streamed = await request.send();
@@ -146,8 +140,19 @@ class DataProvider extends ChangeNotifier {
             }
           }
           _detections = dets;
-          final classes = dets.map((d) => d['class_name'] ?? 'obj').toList();
-          final classesString = classes.join(', ');
+          // final classes = dets.map((d) => d['class_name'] ?? 'obj').toList();
+          // final confidences = dets.map((d) => d['confidence'] ?? 0).toList();
+
+          final classesString = dets
+              .map((d) {
+                final name = d['class_name'] ?? 'obj';
+                final conf = d['confidence'];
+
+                return "$name ($conf%)";
+              })
+              .join(', ');
+
+          // final classesString = classes.join(', ');
           _result = 'Terdeteksi: ${dets.length} objek\nClass: $classesString';
         } else if (body is Map && body['error'] != null) {
           _result = 'Server error: ${body['error']}';
@@ -179,7 +184,9 @@ class DataProvider extends ChangeNotifier {
         notifyListeners();
         return;
       }
-      final endpoint = _predictionMethod == 'svm' ? '/predict-svm' : '/predict-rf';
+      final endpoint = _predictionMethod == 'svm'
+          ? '/predict-svm'
+          : '/predict-rf';
       final uri = Uri.parse('$SERVER_URL$endpoint');
       final request = http.MultipartRequest('POST', uri);
       request.files.add(
@@ -194,9 +201,14 @@ class DataProvider extends ChangeNotifier {
         if (body['success'] == true && body['prediction'] != null) {
           final pred = body['prediction'];
           final labelName = pred['label_name'] ?? 'unknown';
-          final labelIndex = pred['label_index'] ?? 'unknown';
-          final methodName = _predictionMethod == 'svm' ? 'SVM' : 'Random Forest';
-          _result = 'Prediksi ($methodName): $labelName (index: $labelIndex)';
+          // final labelIndex = pred['label_index'] ?? 'unknown';
+          final confidence = pred['confidence']?.toString() != null
+              ? '${pred['confidence']}%'
+              : 'unknown';
+          final methodName = _predictionMethod == 'svm'
+              ? 'SVM'
+              : 'Random Forest';
+          _result = 'Prediksi ($methodName): $labelName ($confidence)';
         } else if (body['error'] != null) {
           _result = 'Server error: ${body['error']}';
         } else {
