@@ -17,6 +17,7 @@ class DataProvider extends ChangeNotifier {
   double? _origImageHeight;
   String? _predictionMethod;
   int _minConfidence = 75;
+  bool _showMethodAlert = false;
 
   File? get image => _image;
   String? get result => _result;
@@ -26,6 +27,7 @@ class DataProvider extends ChangeNotifier {
   double? get origImageHeight => _origImageHeight;
   String? get predictionMethod => _predictionMethod;
   int get minConfidence => _minConfidence;
+  bool get showMethodAlert => _showMethodAlert;
 
   void setMinConfidence(int value) {
     _minConfidence = value;
@@ -43,6 +45,7 @@ class DataProvider extends ChangeNotifier {
       _detections.clear();
     } else {
       _predictionMethod = method;
+      _showMethodAlert = false; // Reset alert ketika metode dipilih
     }
     notifyListeners();
   }
@@ -68,7 +71,8 @@ class DataProvider extends ChangeNotifier {
   // Fungsi untuk Gallery (Butuh Metode SVM/RF)
   Future<void> pickAndPredict() async {
     if (_predictionMethod == null) {
-      _result = 'Silakan pilih metode prediksi terlebih dahulu.';
+      // Tampilkan alert merah
+      _showMethodAlert = true;
       notifyListeners();
       return;
     }
@@ -150,18 +154,18 @@ class DataProvider extends ChangeNotifier {
           _detections = dets;
 
           if (dets.isEmpty) {
-            _result = 'Tidak terdeteksi karena confidence dibawah $_minConfidence%';
+            _result =
+                'Tidak terdeteksi karena confidence dibawah $_minConfidence%';
           } else {
             final classesString = dets
                 .map((d) {
-              final name = d['class_name'] ?? 'obj';
-              final conf = d['confidence'];
-              return "$name ($conf%)";
-            })
+                  final name = d['class_name'] ?? 'obj';
+                  final conf = d['confidence'];
+                  return "$name ($conf%)";
+                })
                 .join(', ');
             _result = 'Terdeteksi: ${dets.length} objek\nClass: $classesString';
           }
-
         } else if (body is Map && body['error'] != null) {
           _result = 'Server error: ${body['error']}';
         } else {
@@ -216,9 +220,12 @@ class DataProvider extends ChangeNotifier {
           final labelName = pred['label_name'] ?? 'unknown';
 
           double confidenceRaw = 0.0;
-          if (pred['confidence'] != null) confidenceRaw = (pred['confidence'] as num).toDouble();
-          else if (pred['probability'] != null) confidenceRaw = (pred['probability'] as num).toDouble();
-          else if (pred['score'] != null) confidenceRaw = (pred['score'] as num).toDouble();
+          if (pred['confidence'] != null)
+            confidenceRaw = (pred['confidence'] as num).toDouble();
+          else if (pred['probability'] != null)
+            confidenceRaw = (pred['probability'] as num).toDouble();
+          else if (pred['score'] != null)
+            confidenceRaw = (pred['score'] as num).toDouble();
 
           double confidencePercent = confidenceRaw;
           if (confidenceRaw <= 1.0) {
@@ -226,15 +233,18 @@ class DataProvider extends ChangeNotifier {
           }
 
           if (confidencePercent < _minConfidence) {
-            _result = 'Tidak terdeteksi karena confidence dibawah $_minConfidence%';
+            _result =
+                'Tidak terdeteksi karena confidence dibawah $_minConfidence%';
           } else {
-            final methodName = _predictionMethod == 'svm' ? 'SVM' : 'Random Forest';
+            final methodName = _predictionMethod == 'svm'
+                ? 'SVM'
+                : 'Random Forest';
             final confString = confidencePercent.toStringAsFixed(1);
             _result = 'Prediksi ($methodName): $labelName ($confString%)';
           }
-
         } else {
-          _result = 'Tidak terdeteksi karena confidence dibawah $_minConfidence%';
+          _result =
+              'Tidak terdeteksi karena confidence dibawah $_minConfidence%';
         }
       } else {
         _result = 'Request gagal: HTTP ${response.statusCode}';
