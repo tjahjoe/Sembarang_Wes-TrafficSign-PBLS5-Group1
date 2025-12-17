@@ -16,6 +16,8 @@ class DataProvider extends ChangeNotifier {
   double? _origImageWidth;
   double? _origImageHeight;
   String? _predictionMethod;
+
+  // Default 75%
   int _minConfidence = 75;
 
   File? get image => _image;
@@ -27,16 +29,13 @@ class DataProvider extends ChangeNotifier {
   String? get predictionMethod => _predictionMethod;
   int get minConfidence => _minConfidence;
 
-  // Setter untuk min confidence
   void setMinConfidence(int value) {
     _minConfidence = value;
     notifyListeners();
   }
 
-  // Set IP sesuai dengan server yang digunakan
   static const String SERVER_URL = 'https://elchilz-sembarang-wes.hf.space';
 
-  // Setter untuk metode prediksi
   void setPredictionMethod(String method) {
     if (_predictionMethod == method) {
       _predictionMethod = null;
@@ -49,13 +48,10 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Cancel pilihan metode
   void cancelPredictionMethod() {
     _predictionMethod = null;
     notifyListeners();
   }
-
-  // Logika Pemrosesan Gambar dan Komunikasi Server
 
   Future<bool> isLoggedIn() async {
     LoginInfo loginInfo = await LoginInfo.fromSharedPreferences();
@@ -64,11 +60,9 @@ class DataProvider extends ChangeNotifier {
 
   Future<void> saveLoginInfo(String username, String password) async {
     LoginInfo loginInfo = await LoginInfo.fromSharedPreferences();
-
     loginInfo.username = username;
     loginInfo.password = password;
     loginInfo.isLoggedIn = true;
-
     loginInfo.saveToSharedPreferences();
   }
 
@@ -105,7 +99,7 @@ class DataProvider extends ChangeNotifier {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
     if (pickedFile == null) return;
-    // Panggil metode prediksi yang dipilih
+
     await _processImage(pickedFile);
   }
 
@@ -125,11 +119,9 @@ class DataProvider extends ChangeNotifier {
 
     try {
       final bytes = await pickedFile.readAsBytes();
-
       final uiImage = await _decodeImage(bytes);
       _origImageWidth = uiImage.width.toDouble();
       _origImageHeight = uiImage.height.toDouble();
-
       _image = File(pickedFile.path);
 
       final uri = Uri.parse('$SERVER_URL/predict-yolo');
@@ -137,7 +129,6 @@ class DataProvider extends ChangeNotifier {
       request.files.add(
         http.MultipartFile.fromBytes('image', bytes, filename: pickedFile.name),
       );
-      // Tambahkan min_confidence ke request
       request.fields['min_confidence'] = _minConfidence.toString();
 
       final streamed = await request.send();
@@ -156,20 +147,21 @@ class DataProvider extends ChangeNotifier {
             }
           }
           _detections = dets;
-          // final classes = dets.map((d) => d['class_name'] ?? 'obj').toList();
-          // final confidences = dets.map((d) => d['confidence'] ?? 0).toList();
 
-          final classesString = dets
-              .map((d) {
-                final name = d['class_name'] ?? 'obj';
-                final conf = d['confidence'];
+          if (dets.isEmpty) {
+            // --- UPDATE KALIMAT ---
+            _result = 'Tidak terdeteksi karena confidence dibawah $_minConfidence%';
+          } else {
+            final classesString = dets
+                .map((d) {
+              final name = d['class_name'] ?? 'obj';
+              final conf = d['confidence'];
+              return "$name ($conf%)";
+            })
+                .join(', ');
+            _result = 'Terdeteksi: ${dets.length} objek\nClass: $classesString';
+          }
 
-                return "$name ($conf%)";
-              })
-              .join(', ');
-
-          // final classesString = classes.join(', ');
-          _result = 'Terdeteksi: ${dets.length} objek\nClass: $classesString';
         } else if (body is Map && body['error'] != null) {
           _result = 'Server error: ${body['error']}';
         } else {
@@ -187,19 +179,17 @@ class DataProvider extends ChangeNotifier {
   }
 
   Future<void> _processImage(XFile pickedFile) async {
+    if (_predictionMethod == 'yolo') {
+      await _processImageYolo(pickedFile);
+      return;
+    }
+
     _image = File(pickedFile.path);
     _loading = true;
     _result = null;
     notifyListeners();
 
     try {
-      // Pilih endpoint berdasarkan metode yang dipilih
-      if (_predictionMethod == null) {
-        _result = 'Metode prediksi belum dipilih.';
-        _loading = false;
-        notifyListeners();
-        return;
-      }
       final endpoint = _predictionMethod == 'svm'
           ? '/predict-svm'
           : '/predict-rf';
@@ -208,7 +198,6 @@ class DataProvider extends ChangeNotifier {
       request.files.add(
         await http.MultipartFile.fromPath('image', pickedFile.path),
       );
-      // Tambahkan min_confidence ke request
       request.fields['min_confidence'] = _minConfidence.toString();
 
       final streamed = await request.send();
@@ -216,21 +205,34 @@ class DataProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> body = jsonDecode(response.body);
+
         if (body['success'] == true && body['prediction'] != null) {
           final pred = body['prediction'];
           final labelName = pred['label_name'] ?? 'unknown';
-          // final labelIndex = pred['label_index'] ?? 'unknown';
-          final confidence = pred['confidence']?.toString() != null
-              ? '${pred['confidence']}%'
-              : 'unknown';
-          final methodName = _predictionMethod == 'svm'
-              ? 'SVM'
-              : 'Random Forest';
-          _result = 'Prediksi ($methodName): $labelName ($confidence)';
-        } else if (body['error'] != null) {
-          _result = 'Server error: ${body['error']}';
+
+          double confidenceRaw = 0.0;
+          if (pred['confidence'] != null) confidenceRaw = (pred['confidence'] as num).toDouble();
+          else if (pred['probability'] != null) confidenceRaw = (pred['probability'] as num).toDouble();
+          else if (pred['score'] != null) confidenceRaw = (pred['score'] as num).toDouble();
+
+          double confidencePercent = confidenceRaw;
+          if (confidenceRaw <= 1.0) {
+            confidencePercent = confidenceRaw * 100;
+          }
+
+          if (confidencePercent < _minConfidence) {
+            // --- UPDATE KALIMAT ---
+            _result = 'Tidak terdeteksi karena confidence dibawah $_minConfidence%';
+          } else {
+            final methodName = _predictionMethod == 'svm' ? 'SVM' : 'Random Forest';
+            final confString = confidencePercent.toStringAsFixed(1);
+            _result = 'Prediksi ($methodName): $labelName ($confString%)';
+          }
+
         } else {
-          _result = 'Tidak ada prediksi pada response.';
+          // Jika server tidak mengembalikan prediksi (terfilter di server)
+          // --- UPDATE KALIMAT ---
+          _result = 'Tidak terdeteksi karena confidence dibawah $_minConfidence%';
         }
       } else {
         _result = 'Request gagal: HTTP ${response.statusCode}';
