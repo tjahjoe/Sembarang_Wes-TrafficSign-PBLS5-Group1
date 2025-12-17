@@ -191,6 +191,84 @@ class HomePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
+                  // Dropdown Min Confidence
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade800,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.amber.shade300,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Minimum Confidence (%)',
+                          style: TextStyle(
+                            color: Colors.amber.shade300,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade700,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.amber.shade400,
+                              width: 1,
+                            ),
+                          ),
+                          child: DropdownButton<int>(
+                            value: dataProvider.minConfidence,
+                            isExpanded: true,
+                            dropdownColor: Colors.grey.shade800,
+                            underline: const SizedBox(),
+                            icon: Icon(
+                              Icons.arrow_drop_down,
+                              color: Colors.amber.shade300,
+                            ),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                            items: List.generate(101, (index) => index)
+                                .map((value) => DropdownMenuItem<int>(
+                                      value: value,
+                                      child: Text(
+                                        '$value%',
+                                        style: const TextStyle(color: Colors.white),
+                                      ),
+                                    ))
+                                .toList(),
+                            onChanged: _loading
+                                ? null
+                                : (value) {
+                                    if (value != null) {
+                                      dataProviderFunction.setMinConfidence(value);
+                                    }
+                                  },
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Prediksi di bawah nilai ini akan ditolak',
+                          style: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [

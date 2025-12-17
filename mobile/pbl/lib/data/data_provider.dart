@@ -16,6 +16,7 @@ class DataProvider extends ChangeNotifier {
   double? _origImageWidth;
   double? _origImageHeight;
   String? _predictionMethod;
+  int _minConfidence = 75;
 
   File? get image => _image;
   String? get result => _result;
@@ -24,6 +25,13 @@ class DataProvider extends ChangeNotifier {
   double? get origImageWidth => _origImageWidth;
   double? get origImageHeight => _origImageHeight;
   String? get predictionMethod => _predictionMethod;
+  int get minConfidence => _minConfidence;
+
+  // Setter untuk min confidence
+  void setMinConfidence(int value) {
+    _minConfidence = value;
+    notifyListeners();
+  }
 
   // Set IP sesuai dengan server yang digunakan
   static const String SERVER_URL = 'https://elchilz-sembarang-wes.hf.space';
@@ -88,11 +96,17 @@ class DataProvider extends ChangeNotifier {
       return;
     }
 
+    if (_predictionMethod == null) {
+      _result = 'Silakan pilih metode prediksi terlebih dahulu.';
+      notifyListeners();
+      return;
+    }
+
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
     if (pickedFile == null) return;
-    // Panggil metode prediksi yang digunakan YOLO
-    await _processImageYolo(pickedFile);
+    // Panggil metode prediksi yang dipilih
+    await _processImage(pickedFile);
   }
 
   Future<ui.Image> _decodeImage(Uint8List bytes) {
@@ -123,6 +137,8 @@ class DataProvider extends ChangeNotifier {
       request.files.add(
         http.MultipartFile.fromBytes('image', bytes, filename: pickedFile.name),
       );
+      // Tambahkan min_confidence ke request
+      request.fields['min_confidence'] = _minConfidence.toString();
 
       final streamed = await request.send();
       final response = await http.Response.fromStream(streamed);
@@ -192,6 +208,8 @@ class DataProvider extends ChangeNotifier {
       request.files.add(
         await http.MultipartFile.fromPath('image', pickedFile.path),
       );
+      // Tambahkan min_confidence ke request
+      request.fields['min_confidence'] = _minConfidence.toString();
 
       final streamed = await request.send();
       final response = await http.Response.fromStream(streamed);
