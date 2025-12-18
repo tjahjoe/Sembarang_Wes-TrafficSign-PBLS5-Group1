@@ -16,7 +16,7 @@ class DataProvider extends ChangeNotifier {
   double? _origImageWidth;
   double? _origImageHeight;
   String? _predictionMethod;
-  int _minConfidence = 75;
+  int _minConfidence = 70;
   bool _showMethodAlert = false;
 
   File? get image => _image;
