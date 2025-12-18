@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pbl/components/password_field.dart';
@@ -6,7 +8,7 @@ import 'package:pbl/pages/home_page.dart';
 import 'package:pbl/data/data_provider.dart';
 
 class LoginPage extends StatefulWidget {
-  final String title = 'Traffic Sign Detector - Login';
+  final String title = 'Traffix App - Login';
 
   const LoginPage({super.key});
 
@@ -135,7 +137,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 20),
                         const Text(
-                          'Traffic Sign Detector',
+                          'Traffix App',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 24,

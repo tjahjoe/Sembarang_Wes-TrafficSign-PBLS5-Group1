@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:pbl/data/data_provider.dart';
@@ -41,7 +43,7 @@ class HomePage extends StatelessWidget {
             Icon(Icons.traffic, size: 28, color: Colors.amber),
             SizedBox(width: 12),
             Text(
-              "Traffic Sign Detection",
+              "Traffix App",
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,

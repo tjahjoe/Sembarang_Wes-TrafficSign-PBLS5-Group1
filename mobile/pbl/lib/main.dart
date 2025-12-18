@@ -5,10 +5,10 @@ import 'package:pbl/pages/startup_page.dart';
 
 void main() {
   runApp(
-      ChangeNotifierProvider(
-        create: (context) => DataProvider(),
-        child: const MyApp(),
-      )
+    ChangeNotifierProvider(
+      create: (context) => DataProvider(),
+      child: const MyApp(),
+    ),
   );
 }
 
@@ -18,13 +18,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: 'Traffic Sign Detector',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber),
-        ),
-        home: const StartupPage()
+      title: 'Traffix App',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber),
+      ),
+      home: const StartupPage(),
     );
   }
 }
